@@ -241,7 +241,8 @@ input::placeholder, textarea::placeholder{color:var(--vp-faint) !important; opac
 [data-testid="stSidebar"] [data-testid="stVerticalBlock"]:has(.st-key-vp_sidebar_profile) .st-key-vp_sidebar_profile{margin-top:auto;}
 .st-key-vp_card_doc{padding:30px 36px 34px !important; max-width:940px;}
 .st-key-vp_card_doc p, .st-key-vp_card_doc li{font-size:13.5px; line-height:1.75;}
-.st-key-vp_card_doc h1, .st-key-vp_card_doc h2{font-size:1.05rem !important;}
+.st-key-vp_card_doc h1, .st-key-vp_card_doc h2{font-size:1.05rem !important; margin:20px 0 6px !important;}
+.st-key-vp_card_doc h3, .st-key-vp_card_doc h4{font-size:.96rem !important; margin:18px 0 6px !important;}
 .st-key-vp_card_doc ul{padding-left:20px;}
 .st-key-vp_card_doc hr{margin:18px 0 !important;}
 
@@ -361,7 +362,6 @@ input::placeholder, textarea::placeholder{color:var(--vp-faint) !important; opac
 .vp-scale-mark{position:absolute; top:-4px; width:16px; height:16px; border-radius:50%; background:var(--vp-ink);
   border:3px solid #fff; box-shadow:0 2px 8px -1px rgba(11,23,41,.45); transform:translateX(-50%); animation:vp-pop .5s .5s cubic-bezier(.16,1,.3,1) both;}
 .vp-scale-labels{display:flex; justify-content:space-between; font-size:10.5px; color:var(--vp-faint); margin-top:7px; font-weight:550;}
-.vp-scale-here{font-size:11px; font-weight:650; color:var(--vp-ink-2);}
 
 /* Insights */
 .vp-insights{display:grid; grid-template-columns:repeat(auto-fit,minmax(292px,1fr)); gap:12px;}
@@ -455,11 +455,6 @@ input::placeholder, textarea::placeholder{color:var(--vp-faint) !important; opac
 @media (max-width:820px){.vp-check-row{grid-template-columns:1fr; gap:5px;}}
 
 /* Document pages */
-.vp-doc{background:var(--vp-surface); border:1px solid var(--vp-line); border-radius:var(--vp-r); padding:26px 32px 30px; box-shadow:var(--vp-sh-2); max-width:900px;}
-.vp-doc h3{font-size:13.5px !important; font-weight:700; color:var(--vp-ink) !important; margin:20px 0 6px !important;}
-.vp-doc p, .vp-doc li{font-size:13.5px; color:var(--vp-body); line-height:1.72;}
-.vp-doc ul{padding-left:18px;}
-.vp-doc-meta{font-size:11.5px; color:var(--vp-muted); border-bottom:1px solid var(--vp-line); padding-bottom:12px; margin-bottom:6px;}
 .vp-foot{font-size:11.5px; color:var(--vp-faint); text-align:center; padding:22px 0 6px; line-height:1.65;}
 
 /* ── Motion ────────────────────────────────────────────────────────────────── */
@@ -468,7 +463,7 @@ html{scroll-behavior:smooth;}
 .vp-num{counter-reset:vp-num var(--vp-num); font-variant-numeric:tabular-nums;}
 .vp-num::after{content:counter(vp-num);}
 .vp-rise{animation:vp-rise .38s cubic-bezier(.16,1,.3,1) both;}
-.vp-rise-1{animation-delay:.04s;} .vp-rise-2{animation-delay:.08s;} .vp-rise-3{animation-delay:.12s;}
+.vp-rise-1{animation-delay:.05s;}
 @keyframes vp-rise{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
 @keyframes vp-grow{from{width:0;}}
 @keyframes vp-draw{from{stroke-dashoffset:var(--vp-c,528);}}
@@ -498,7 +493,6 @@ html{scroll-behavior:smooth;}
   .vp-ring-score{font-size:2.1rem;}
   .vp-h1{font-size:1.32rem;}
   .vp-elig-range{font-size:1.7rem;}
-  .vp-doc{padding:20px 18px 24px;}
   [data-testid="stMainBlockContainer"], .block-container{padding:2.4rem .8rem 2.6rem !important;}
 }
 </style>
@@ -3380,7 +3374,9 @@ def build_context(persona_key, persona, live):
     return {
         "months": months,
         "cashflow_months": months,
-        "trend_days": {3: 30, 6: 90, 12: 180}.get(months, 90),
+        # Score trend is a fixed trailing window (the dashboard asks for 30 days); the
+        # reporting-period selector drives the cash-flow window and the KPI context.
+        "trend_days": 30,
         "series": series,
         "signals": signals,
         "risk": risk,
