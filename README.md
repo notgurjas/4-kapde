@@ -52,7 +52,9 @@ parsed, stored or sent anywhere, and no external API is called.
 * Motion is deliberately restrained: card lift on hover, ring draw, progress fill, count-up animations
   and a short card entrance — all disabled under `prefers-reduced-motion`.
 * Layouts are tuned for a laptop demo and degrade to tablet and mobile through fluid grids,
-  Streamlit's column wrapping and container queries at 1200/980/760 px.
+  Streamlit's own column wrapping and media queries at 1400/1200/980/760 px.
+* The dashboard cash-flow card carries its own 3M/6M/9M/12M month filter, and the header
+  reporting-period selector drives the window everywhere else.
 
 ## Repository layout
 

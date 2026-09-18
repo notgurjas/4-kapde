@@ -601,9 +601,14 @@ def pct_change(current, previous) -> float:
         return 0.0
 
 
-def delta_chip(pct: float, suffix: str = "vs last month") -> str:
-    tone = "pos" if pct > 0.05 else ("neg" if pct < -0.05 else "neutral")
-    arrow = "↑" if pct > 0.05 else ("↓" if pct < -0.05 else "→")
+def delta_chip(pct: float, invert: bool = False) -> str:
+    """Change chip. `invert=True` for cost lines, where a rise is not good news."""
+    rising = pct > 0.05
+    falling = pct < -0.05
+    good = falling if invert else rising
+    bad = rising if invert else falling
+    tone = "pos" if good else ("warn" if bad else "neutral")
+    arrow = "↑" if rising else ("↓" if falling else "→")
     return f'<span class="vp-chip vp-chip--{tone}">{arrow} {pct:+.1f}%</span>'
 
 
@@ -651,19 +656,21 @@ def section(eyebrow: str, title: str, sub: str = "", right: str = "") -> None:
 
 
 def kpi_card(label: str, value: str, icon_name: str, tone: str, delta: float,
-             compare: str, spark_values, spark_color: str = "#0E9F6E") -> str:
+             compare: str, spark_values, spark_color: str = "#0E9F6E",
+             invert: bool = False) -> str:
     return (
         f'<div class="vp-kpi">'
         f'<div class="vp-kpi-top"><div class="vp-ico vp-ico--{tone}">{icon(icon_name)}</div>'
         f'<div class="vp-kpi-label">{label}</div></div>'
         f'<div class="vp-kpi-value">{value}</div>'
-        f'<div class="vp-kpi-foot">{delta_chip(delta)}<span>{compare}</span></div>'
+        f'<div class="vp-kpi-foot">{delta_chip(delta, invert)}<span>{compare}</span></div>'
         f'{sparkline(spark_values, spark_color)}'
         f"</div>"
     )
 
 
-def factor_card(name: str, value: int, delta_text: str, icon_name: str, tooltip: str) -> str:
+def factor_card(name: str, value: int, delta_text: str, icon_name: str, tooltip: str,
+                trend_text: str = "") -> str:
     if value >= 75:
         color, tone = "linear-gradient(90deg,#34D399,#0E9F6E)", "pos"
     elif value >= 55:
@@ -678,11 +685,22 @@ def factor_card(name: str, value: int, delta_text: str, icon_name: str, tooltip:
         f'<div class="vp-factor-val">{counter_span(value)}<small>/100</small></div>'
         f"</div>"
         f'<div class="vp-track"><div class="vp-fill" style="width:{value}%;background:{color}"></div></div>'
-        f'<div class="vp-factor-foot"><span>Score contribution</span>'
-        f'<span class="vp-chip vp-chip--{"pos" if delta_text.startswith("+") else ("neg" if delta_text.startswith("-") else "neutral")}">'
-        f'{delta_text}</span></div>'
+        f"{factor_foot(delta_text, trend_text)}"
         f"</div>"
     )
+
+
+def factor_foot(delta_text: str, trend_text: str = "") -> str:
+    """Trend indicator under a factor card: live movement when it exists, else the 30-day trend."""
+    moved = delta_text.strip() not in ("", "0", "+0", "-0")
+    shown = (delta_text if moved else trend_text).strip()
+    label = "Live change" if moved else "30-day trend"
+    if shown in ("", "0", "+0", "-0"):
+        return (f'<div class="vp-factor-foot"><span>Factor band</span>'
+                f'<span class="vp-chip vp-chip--neutral">No movement</span></div>')
+    tone = "pos" if shown.startswith("+") else "neg"
+    return (f'<div class="vp-factor-foot"><span>{label}</span>'
+            f'<span class="vp-chip vp-chip--{tone}">{shown}</span></div>')
 
 
 def insight_card(tone: str, title: str, body: str, icon_name: str = "spark") -> str:
@@ -1804,6 +1822,20 @@ def create_score_trend_chart(base_score, live_score, name, days=30):
         text=f"  {live_score}", xanchor="right", yanchor="middle",
         font=dict(size=12, color=color, family=CHART_FONT, weight="bold"),
     )
+    # Mark the two notable events in the window so the movement is readable at a glance.
+    peak_idx = scores.index(max(scores))
+    if peak_idx not in (0, len(scores) - 1) and max(scores) > base_score:
+        fig.add_annotation(
+            x=day_axis[peak_idx], y=max(scores), xref="x", yref="y", showarrow=False,
+            text=f"Peak {max(scores)}", yshift=15, bgcolor="rgba(255,255,255,.86)", borderpad=3,
+            font=dict(size=10.5, color=C_EMERALD, family=CHART_FONT),
+        )
+    if low_idx not in (0, len(scores) - 1):
+        fig.add_annotation(
+            x=day_axis[low_idx], y=min(scores), xref="x", yref="y", showarrow=False,
+            text=f"Dip {min(scores)}", yshift=-16, bgcolor="rgba(255,255,255,.86)", borderpad=3,
+            font=dict(size=10.5, color=C_SLATE, family=CHART_FONT),
+        )
     apply_chart_style(fig, height=320)
     span = max(scores) - min(scores)
     pad = max(18, span * 0.55)
@@ -2148,6 +2180,7 @@ def kpi_grid(persona, live, series):
             kpi_card(
                 kpi["label"], kpi["value"], kpi["icon"], kpi["tone"],
                 kpi["delta"], kpi["compare"], kpi["spark"][-series["window"]:], kpi["color"],
+                kpi.get("invert", False),
             )
         )
     return f'<div class="vp-kpi-grid vp-rise vp-rise-1">{"".join(cards)}</div>'
@@ -2222,6 +2255,7 @@ def render_overview(persona_key, persona, live, ctx):
         factor_card(
             name if name != "Liquidity Buffer" else "Liquidity",
             data["value"], data["delta"], FACTOR_ICONS[name], FACTOR_TOOLTIPS[name],
+            persona["factors"].get(name, {}).get("delta", ""),
         )
         for name, data in live["factors"].items()
     )
@@ -2234,10 +2268,23 @@ def render_overview(persona_key, persona, live, ctx):
     cash_col, trend_col = st.columns([1.62, 1.0], gap="medium")
     with cash_col:
         with st.container(key="vp_card_cashflow"):
+            control_col, note_col = st.columns([1.0, 1.6], vertical_alignment="center")
+            with control_col:
+                month_choice = st.segmented_control(
+                    "Months shown", ["3M", "6M", "9M", "12M"],
+                    key="vp_cashflow_months", label_visibility="collapsed",
+                )
+            months_shown = int((month_choice or f"{ctx['cashflow_months']}M").replace("M", ""))
+            with note_col:
+                st.markdown(
+                    f'<p style="font-size:11.5px;color:var(--vp-faint);margin:0;text-align:right">'
+                    f'Showing the last {months_shown} months · demo dataset spans Jan–Dec</p>',
+                    unsafe_allow_html=True,
+                )
             fig = create_revenue_expense_chart(
                 persona["monthly_revenue"], persona["monthly_expenses"],
                 live["total_added_revenue"], live["total_added_expense"],
-                persona["name"], months=ctx["cashflow_months"],
+                persona["name"], months=months_shown,
             )
             plot_chart(fig, key=f"overview_cashflow_{persona_key}")
             st.markdown(
@@ -2332,6 +2379,7 @@ def render_credit_score(persona_key, persona, live, ctx):
                 factor_card(
                     name if name != "Liquidity Buffer" else "Liquidity",
                     data["value"], data["delta"], FACTOR_ICONS[name], FACTOR_TOOLTIPS[name],
+                    persona["factors"].get(name, {}).get("delta", ""),
                 )
                 for name, data in live["factors"].items()
             )
