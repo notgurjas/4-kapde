@@ -1,7 +1,8 @@
 """VyaparScore — single-file, offline Streamlit hackathon demonstration.
 
-Run with: streamlit run app.py --server.address 0.0.0.0
-Dependencies: streamlit, pandas, numpy, plotly.
+Run with: streamlit run main.py --server.address 0.0.0.0
+Dependencies: streamlit, pandas, numpy, plotly (see requirements.txt).
+Navigation lives in the sidebar as a five-tab menu; only the selected tab is rendered.
 No uploaded document is parsed, retained on disk, or sent to an external API.
 """
 
@@ -47,11 +48,22 @@ PROFILES = {
         "cash": 3_000, "inventory_due": 115_000,
     },
 }
+# Sidebar tab order matches COPY[*]["tabs"]; icons are shared across languages.
+TAB_ICONS = ["📊", "📈", "📒", "🛡️", "💳"]
 COPY = {
     "English": {
         "title": "Bharat's Micro-Merchant Credit & Fraud Guard",
         "tabs": ["Overview & Credit Health", "Seasonality & Cash Flow",
                  "Bahi-Khata OCR", "Fraud Guard", "Micro-Loan & Bank Report"],
+        "tab_hints": [
+            "Credit score, GST safety meter and scheme match.",
+            "12-month revenue rhythm and the 14-day cash outlook.",
+            "Scan the register, edit expenses, watch profit update.",
+            "Fake screenshot check and synthetic UPI review events.",
+            "EMI calculator, demo approval and bank-ready summary.",
+        ],
+        "nav": "Workspace tabs", "nav_hint": "Use ↑ ↓ arrow keys to switch tabs.",
+        "previous": "← Previous", "next": "Next →",
         "profile": "Merchant profile", "health": "Your business, in one clear picture",
         "revenue": "Monthly UPI Revenue", "profit": "Net Profit",
         "customers": "Active Customers", "limit": "Max Loan Limit",
@@ -63,6 +75,15 @@ COPY = {
         "title": "भारत के छोटे व्यापारियों का क्रेडिट और धोखाधड़ी सुरक्षा साथी",
         "tabs": ["व्यापार और क्रेडिट स्वास्थ्य", "मौसमी आय और नकदी प्रवाह",
                  "बही-खाता OCR", "धोखाधड़ी सुरक्षा", "सूक्ष्म ऋण और बैंक रिपोर्ट"],
+        "tab_hints": [
+            "क्रेडिट स्कोर, GST सुरक्षा मीटर और योजना मिलान।",
+            "12 महीने की आय और 14-दिन का नकदी अनुमान।",
+            "बही-खाता स्कैन करें, खर्च बदलें, लाभ देखें।",
+            "नकली स्क्रीनशॉट जाँच और UPI समीक्षा संकेत।",
+            "EMI कैलकुलेटर, डेमो स्वीकृति और बैंक रिपोर्ट।",
+        ],
+        "nav": "कार्यस्थल टैब", "nav_hint": "↑ ↓ तीर कुंजियों से टैब बदलें।",
+        "previous": "← पिछला", "next": "अगला →",
         "profile": "व्यापारी प्रोफ़ाइल", "health": "आपके व्यापार की स्पष्ट तस्वीर",
         "revenue": "मासिक UPI आय", "profit": "शुद्ध लाभ",
         "customers": "सक्रिय ग्राहक", "limit": "अधिकतम ऋण सीमा",
@@ -108,8 +129,9 @@ h1, h2, h3, h4 {color: #12372e !important; letter-spacing: -.025em;}
     background: #173d34; border: 1px solid #3c6557; cursor: pointer;
 }
 .st-key-section_nav [role="radiogroup"] label:hover {background: #245444;}
+.st-key-section_nav [role="radiogroup"] label p {white-space: normal; line-height: 1.35;}
 .st-key-section_nav [role="radiogroup"] label:has(input:checked) {
-    background: #d1fae5; border-color: #6ee7b7;
+    background: #d1fae5; border-color: #6ee7b7; box-shadow: inset 4px 0 0 #059669;
 }
 [data-testid="stSidebar"] .st-key-section_nav label:has(input:checked) p {
     color: #064e3b !important; font-weight: 700;
@@ -183,6 +205,17 @@ button:focus-visible, a:focus-visible {outline: 3px solid #0d966b !important; ou
     padding: 30px; border-radius: 20px; margin-bottom: 22px;}
 .hero h1 {color: white !important; margin: 3px 0; font-size: 2.6rem;}
 .hero p {color: #d6f5e5; margin: 8px 0 0;}
+/* Active-tab header mirrors the sidebar selection in the main canvas. */
+.page-head {display: flex; align-items: center; gap: 14px; background: #ffffff;
+    border: 1px solid #dce8e2; border-left: 5px solid #087f5b; border-radius: 14px;
+    padding: 14px 18px; margin: 2px 0 18px; box-shadow: 0 5px 20px rgba(16,46,41,.035);}
+.page-head-icon {font-size: 1.6rem; line-height: 1;}
+.page-head-text {display: flex; flex-direction: column; gap: 2px; min-width: 0;}
+.page-head-title {color: #12372e; font-size: 1.12rem; font-weight: 700; letter-spacing: -.02em;}
+.page-head-hint {color: #52675f; font-size: .85rem;}
+.page-head-count {margin-left: auto; color: #065f46; font-weight: 700; font-size: .78rem;
+    background: #ecfdf5; border: 1px solid #b7e4cd; border-radius: 20px;
+    padding: 4px 10px; white-space: nowrap;}
 .eyebrow {font-size: .74rem; letter-spacing: .16em; font-weight: 700;}
 .card {padding: 22px; border-radius: 16px; border: 1px solid #dce8e2;
     background: white; color: #16352c; margin: 10px 0 16px;}
@@ -278,20 +311,40 @@ def transaction_history(risk_account):
     return transactions
 
 
+def tab_label(index, copy, flagged_events):
+    """Sidebar tab caption: icon, translated title and a live fraud badge."""
+    label = f"{TAB_ICONS[index]}  {copy['tabs'][index]}"
+    if index == 3 and flagged_events:
+        label += f"   🔴 {flagged_events}"
+    return label
+
+
+def goto_section(index):
+    """Widget callback: switch tabs before the script reruns, so state stays in sync."""
+    st.session_state["section_nav"] = index
+
+
 with st.sidebar:
     st.markdown("## 🛡️ VyaparScore")
     st.caption("SMALL BUSINESSES. BIG POSSIBILITIES.")
     language = st.radio("Language / भाषा", list(COPY), horizontal=True)
     text = COPY[language]
-    merchant = st.selectbox(text["profile"], list(PROFILES))
+    # Stable key: the label is translated, and a changing label would otherwise
+    # reset this widget (losing the merchant) every time the language switches.
+    merchant = st.selectbox(text["profile"], list(PROFILES), key="merchant_select")
     profile = PROFILES[merchant]
+    # Derived once here so the tab badge and the Fraud Guard page always agree.
+    risk_account = merchant == "Suspicious Merchant"
+    flagged_events = int((transaction_history(risk_account)["Status"] != "🟢 Clear").sum())
     st.divider()
     section = st.radio(
-        "Workspace" if language == "English" else "कार्यस्थल",
-        options=range(5),
-        format_func=lambda index: text["tabs"][index],
+        text["nav"],
+        options=range(len(text["tabs"])),
+        format_func=lambda index: tab_label(index, text, flagged_events),
         key="section_nav",
     )
+    st.caption(f"{TAB_ICONS[section]} {text['tab_hints'][section]}")
+    st.caption(text["nav_hint"])
     st.divider()
     st.markdown(f"### {merchant}")
     st.write(profile["owner"])
@@ -318,6 +371,25 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.caption(f"{merchant} / September 2026 snapshot / Synthetic financial data")
+# The sidebar owns the tab list; this header shows the active tab and lets you
+# step through tabs without reopening a collapsed sidebar.
+head_title, head_nav = st.columns([0.74, 0.26], vertical_alignment="center")
+with head_title:
+    st.markdown(
+        f'<div class="page-head"><span class="page-head-icon">{TAB_ICONS[section]}</span>'
+        f'<span class="page-head-text">'
+        f'<span class="page-head-title">{escape(text["tabs"][section])}</span>'
+        f'<span class="page-head-hint">{escape(text["tab_hints"][section])}</span></span>'
+        f'<span class="page-head-count">{section + 1} / {len(TAB_ICONS)}</span></div>',
+        unsafe_allow_html=True,
+    )
+with head_nav:
+    prev_col, next_col = st.columns(2)
+    prev_col.button(text["previous"], key="nav_prev", on_click=goto_section, args=(section - 1,),
+                    disabled=section == 0, width="stretch")
+    next_col.button(text["next"], key="nav_next", on_click=goto_section,
+                    args=(section + 1,), disabled=section == len(TAB_ICONS) - 1, width="stretch")
+
 # Data lives outside widgets so navigating away cannot discard register edits.
 editor_context = (merchant, section)
 if section == 2 and st.session_state.get("last_editor_context") != editor_context:
@@ -381,7 +453,6 @@ total_expenses = float(expenses["Amount (₹)"].sum())
 profit, score, max_loan, score_adjustment = credit_health(profile, total_expenses)
 history = revenue_history(merchant)
 annual_revenue = int(history["Revenue"].sum())
-risk_account = merchant == "Suspicious Merchant"
 health_label = "Strong" if score >= 750 else "Building" if score >= 600 else "Needs review"
 
 transactions = transaction_history(risk_account)
