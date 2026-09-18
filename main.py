@@ -85,6 +85,7 @@ section[data-testid="stSidebar"]{
   background:linear-gradient(180deg,#FFFFFF 0%,#FCFEFD 55%,#F7FBF9 100%);
   border-right:1px solid var(--vp-line);
   box-shadow:18px 0 40px -40px rgba(15,23,42,.45);
+  transition:width .24s cubic-bezier(.16,1,.3,1), transform .24s cubic-bezier(.16,1,.3,1);
 }
 [data-testid="stSidebarHeader"]{padding:.5rem .35rem 0 !important;}
 [data-testid="stSidebarUserContent"]{padding:1rem 1.05rem 1.5rem !important;}
@@ -265,7 +266,7 @@ input::placeholder, textarea::placeholder{color:var(--vp-faint) !important; opac
 .vp-greet{font-size:12.5px; color:var(--vp-muted); font-weight:550; letter-spacing:.01em;}
 
 .vp-section{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:6px 0 10px;}
-.vp-section-title{font-size:1.02rem; font-weight:660; color:var(--vp-ink); letter-spacing:-.02em; margin:0;}
+.vp-section-title{font-size:1.08rem; font-weight:660; color:var(--vp-ink); letter-spacing:-.02em; margin:0;}
 .vp-section-sub{font-size:12.5px; color:var(--vp-muted); margin:2px 0 0;}
 
 .vp-chip{
@@ -343,7 +344,7 @@ input::placeholder, textarea::placeholder{color:var(--vp-faint) !important; opac
 .vp-ring-center{
   position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
 }
-.vp-ring-score{font-size:2.5rem; font-weight:700; color:var(--vp-ink); letter-spacing:-.035em; line-height:1; font-variant-numeric:tabular-nums;}
+.vp-ring-score{font-size:2.72rem; font-weight:700; color:var(--vp-ink); letter-spacing:-.035em; line-height:1; font-variant-numeric:tabular-nums;}
 .vp-ring-den{font-size:11.5px; font-weight:600; color:var(--vp-faint); letter-spacing:.02em;}
 .vp-ring-cap{font-size:10.5px; font-weight:700; color:var(--vp-emerald-700); letter-spacing:.09em; text-transform:uppercase; margin-top:4px;}
 .vp-grade{
