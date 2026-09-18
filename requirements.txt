@@ -1,0 +1,5 @@
+# VyaparPulse runtime dependencies
+streamlit>=1.49
+plotly>=5.19
+pandas>=2.0
+numpy>=1.24

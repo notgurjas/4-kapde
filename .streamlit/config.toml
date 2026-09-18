@@ -1,0 +1,40 @@
+# VyaparPulse — Streamlit theme configuration.
+# Design tokens live here so Streamlit's own widgets inherit the product palette,
+# while the bespoke card/typography layer is defined in main.py.
+
+[theme]
+base = "light"
+primaryColor = "#0E9F6E"              # emerald — positive / financial accent
+backgroundColor = "#F6F8FB"           # app canvas (off-white)
+secondaryBackgroundColor = "#FFFFFF"  # sidebar + widget surfaces
+textColor = "#0F172A"                 # deep navy/charcoal ink
+borderColor = "#E6EAF1"
+linkColor = "#0B8A5F"
+baseRadius = "0.75rem"
+buttonRadius = "0.625rem"
+showWidgetBorder = true
+showSidebarBorder = true
+baseFontSize = 15
+metricValueFontSize = "1.7rem"
+metricValueFontWeight = 700
+
+font = "Inter, 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
+headingFont = "Inter, 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
+
+# Self-hosted variable font (no CDN dependency, so the demo also works offline).
+[[theme.fontFaces]]
+family = "Inter"
+url = "app/static/inter-latin-variable.woff2"
+weightRange = "100 900"
+style = "normal"
+
+[server]
+enableStaticServing = true
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = true
